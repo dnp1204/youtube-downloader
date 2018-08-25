@@ -1,20 +1,29 @@
 const fs = require('fs');
-const path = require('path');
 const os = require('os');
 const youtubedl = require('youtube-dl');
-const timeFormat = require('hh-mm-ss');
 
-const progressBar = require('../progress-bar');
+const progressBar = require('../utils/progress-bar');
+const Spinner = require('../utils/spinner');
 
 const HOME = os.homedir();
 const SAVED_LOCATION = `${HOME}/Downloads`;
 
 class Youtube {
+  constructor() {
+    this.spinner = new Spinner();
+  }
+
   download(link) {
     const stream = youtubedl(link);
+
+    this.spinner.start();
+
     stream.on('info', info => {
       const { title, ext, size } = info;
       const fileName = `${title}.${ext}`;
+
+      this.spinner.stop();
+      console.log(`Start downloading ${fileName}`);
 
       progressBar.init(size);
 
