@@ -63,8 +63,9 @@ class Downloader {
         const { title, ext, size } = info;
         const fileName = `${index ? `${index} - ` : ''}${title}.${ext}`;
 
+        this.spinner.stop();
+
         if (verbose) {
-          this.spinner.stop();
           console.log(
             `Start downloading ${helpers.truncate(
               fileName

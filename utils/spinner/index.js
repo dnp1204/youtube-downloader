@@ -13,7 +13,10 @@ class Spinner {
 
   stop() {
     this.spinner.stop();
-    process.stdout.write('\n');
+  }
+
+  setSpinnerTitle(newTitle) {
+    this.spinner.setSpinnerTitle(newTitle);
   }
 }
 
