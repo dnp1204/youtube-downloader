@@ -1,6 +1,6 @@
-const youtube = require('./youtube');
+const downloader = require('./downloader');
 
 const args = process.argv.slice(2);
 const [link] = args;
 
-youtube.download(link);
+downloader.download(link);

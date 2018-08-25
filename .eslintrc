@@ -4,6 +4,7 @@
     "class-methods-use-this": "off",
     "arrow-parens": "off",
     "no-console": "off",
-    "comma-dangle": "off"
+    "comma-dangle": "off",
+    "arrow-body-style": "off"
   }
 }

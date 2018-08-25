@@ -1,47 +1,31 @@
-const fs = require('fs');
-const os = require('os');
-const youtubedl = require('youtube-dl');
+const axios = require('axios');
+const cheerio = require('cheerio');
+const { Promise } = require('bluebird');
 
-const progressBar = require('../utils/progress-bar');
-const Spinner = require('../utils/spinner');
-const helpers = require('../utils/helpers');
-
-const HOME = os.homedir();
-const SAVED_LOCATION = `${HOME}/Downloads`;
+const Video = require('./video');
 
 class Youtube {
-  constructor() {
-    this.spinner = new Spinner();
-  }
+  getUrlsFromPlaylist(link) {
+    return new Promise((resolve, reject) => {
+      const videos = [];
 
-  download(link) {
-    const stream = youtubedl(link);
+      if (!link.includes('https://www.youtube.com')) {
+        reject(new Error('This is not youtube video'));
+      }
 
-    this.spinner.start();
-
-    stream.on('info', info => {
-      const { title, ext, size } = info;
-      const fileName = `${title}.${ext}`;
-
-      this.spinner.stop();
-      console.log(
-        `Start downloading ${helpers.truncate(
-          fileName
-        )} and save to ${SAVED_LOCATION}`
-      );
-
-      progressBar.init(size);
-
-      let pos = 0;
-      stream.on('data', chunk => {
-        pos += chunk.length;
-        progressBar.update(pos);
-      });
-
-      stream.pipe(fs.createWriteStream(`${SAVED_LOCATION}/${fileName}`));
-
-      stream.on('end', () => {
-        console.log(`Finished downloading ${fileName}`);
+      axios.get(link).then(response => {
+        const $ = cheerio.load(response.data);
+        $('.playlist-videos-container > ol')
+          .find('li')
+          .each((index, element) => {
+            const thumbnail = element.attribs['data-thumbnail-url'];
+            const href = $(element)
+              .find('a')
+              .attr('href');
+            const video = new Video(href, thumbnail);
+            videos.push(video);
+          });
+        resolve(videos);
       });
     });
   }
