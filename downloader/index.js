@@ -66,6 +66,7 @@ class Downloader {
         this.spinner.stop();
 
         if (verbose) {
+          process.stdout.write('\n');
           console.log(
             `Start downloading ${helpers.truncate(
               fileName
