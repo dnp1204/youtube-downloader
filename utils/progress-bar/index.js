@@ -1,10 +1,11 @@
-const { bgWhite } = require('chalk');
+const chalk = require('chalk');
 
 class ProgressBar {
   constructor() {
-    this.total = 0;
+    this.barLength = process.stdout.columns - 50;
     this.current = 0;
-    this.bar_length = process.stdout.columns - 30;
+    this.title = 'Current progress';
+    this.total = 0;
   }
 
   init(total) {
@@ -20,17 +21,19 @@ class ProgressBar {
   }
 
   draw(currentProgress) {
-    const filledBarLength = (currentProgress * this.bar_length).toFixed(0);
-    const emptyBarLength = this.bar_length - filledBarLength;
+    const filledBarLength = (currentProgress * this.barLength).toFixed(0);
+    const emptyBarLength = this.barLength - filledBarLength;
 
-    const filledBar = this.getBar(filledBarLength, ' ', bgWhite);
-    const emptyBar = this.getBar(emptyBarLength, '-');
+    const filledBar = this.getBar(filledBarLength, ' ', chalk.bgGreen);
+    const emptyBar = this.getBar(emptyBarLength, '-', chalk);
     const percentageProgress = (currentProgress * 100).toFixed(2);
 
     process.stdout.clearLine();
     process.stdout.cursorTo(0);
     process.stdout.write(
-      `Current progress: [${filledBar}${emptyBar}] | ${percentageProgress}%`
+      `${this.title}: [${filledBar}${emptyBar}] | ${chalk.green(
+        `${percentageProgress}%`
+      )}`
     );
   }
 
@@ -40,6 +43,10 @@ class ProgressBar {
       str += char;
     }
     return color(str);
+  }
+
+  setTitle(newTitle) {
+    this.title = newTitle;
   }
 }
 

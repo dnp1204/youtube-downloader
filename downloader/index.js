@@ -1,12 +1,13 @@
+const { Promise } = require('bluebird');
+const chalk = require('chalk');
 const fs = require('fs');
 const os = require('os');
 const youtubedl = require('youtube-dl');
-const { Promise } = require('bluebird');
 
-const progressBar = require('../utils/progress-bar');
-const youtube = require('../youtube');
-const Spinner = require('../utils/spinner');
 const helpers = require('../utils/helpers');
+const progressBar = require('../utils/progress-bar');
+const Spinner = require('../utils/spinner');
+const youtube = require('../youtube');
 
 const HOME = os.homedir();
 const SAVED_LOCATION = `${HOME}/Downloads`;
@@ -20,11 +21,12 @@ class Downloader {
     this.spinner.start();
 
     if (link.includes('&list=') && downloadAll) {
-      this.downloadPlaylist(link);
+      await this.downloadPlaylist(link);
+      process.stdout.write('\nFinished downloading playlist\n');
     } else {
       try {
         const result = await this.downloadVideo(link);
-        console.log(result);
+        process.stdout.write(`\n${result}\n`);
       } catch (error) {
         console.log(error);
       }
@@ -35,6 +37,8 @@ class Downloader {
     const videos = await youtube.getUrlsFromPlaylist(link);
     let finished = 0;
 
+    this.spinner.stop();
+    progressBar.setTitle(`Current progress (0/${videos.length})`);
     progressBar.init(videos.length);
 
     return Promise.map(
@@ -44,6 +48,9 @@ class Downloader {
           await this.downloadVideo(video.link, false, video.index);
           resolve();
           finished += 1;
+          progressBar.setTitle(
+            `Current progress ${chalk.blue(`(${finished}/${videos.length})`)}`
+          );
           progressBar.update(finished);
         });
       },
@@ -66,7 +73,8 @@ class Downloader {
         this.spinner.stop();
 
         if (verbose) {
-          process.stdout.write('\n');
+          process.stdout.clearLine();
+          process.stdout.cursorTo(0);
           console.log(
             `Start downloading ${helpers.truncate(
               fileName
