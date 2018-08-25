@@ -4,6 +4,7 @@ const youtubedl = require('youtube-dl');
 
 const progressBar = require('../utils/progress-bar');
 const Spinner = require('../utils/spinner');
+const helpers = require('../utils/helpers');
 
 const HOME = os.homedir();
 const SAVED_LOCATION = `${HOME}/Downloads`;
@@ -23,7 +24,11 @@ class Youtube {
       const fileName = `${title}.${ext}`;
 
       this.spinner.stop();
-      console.log(`Start downloading ${fileName}`);
+      console.log(
+        `Start downloading ${helpers.truncate(
+          fileName
+        )} and save to ${SAVED_LOCATION}`
+      );
 
       progressBar.init(size);
 
