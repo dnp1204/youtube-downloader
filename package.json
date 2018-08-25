@@ -11,7 +11,9 @@
   "license": "ISC",
   "dependencies": {
     "bluebird": "^3.5.1",
+    "chalk": "^2.4.1",
     "cheerio": "^1.0.0-rc.2",
+    "hh-mm-ss": "^1.2.0",
     "nodemon": "^1.18.3",
     "youtube-dl": "^1.12.2"
   },
