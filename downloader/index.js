@@ -14,11 +14,11 @@ const HOME = os.homedir();
 const SAVED_LOCATION = `${HOME}/Downloads`;
 
 class Downloader {
-  constructor() {
+  constructor(builder) {
     this.spinner = new Spinner();
-    this.downloadAll = true;
-    this.includedIndex = false;
-    this.toAudio = true;
+    this.downloadAll = builder.downloadAll;
+    this.includedIndex = builder.includedIndex;
+    this.toAudio = builder.toAudio;
   }
 
   async download(link) {
@@ -104,7 +104,7 @@ class Downloader {
 
   downloadVideoOnly(stream, fileName, size, showProgress, resolve) {
     if (showProgress) {
-      this.initDownloadMessage();
+      this.initDownloadMessage(fileName);
 
       const progressBar = new ProgressBar();
       progressBar.init(size);
@@ -154,4 +154,4 @@ class Downloader {
   }
 }
 
-module.exports = new Downloader();
+module.exports = Downloader;
