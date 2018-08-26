@@ -19,7 +19,7 @@ class Downloader {
 
   async download(link, downloadAll = true, includedIndex = false) {
     if (!youtube.isYoutubeSite(link)) {
-      console.log(chalk.red('We only support youtube site!'));
+      console.error(chalk.red('We only support youtube site!'));
       return;
     }
 
@@ -33,7 +33,7 @@ class Downloader {
         const result = await this.downloadVideo(link);
         process.stdout.write(`\n${result}\n`);
       } catch (error) {
-        console.log(error);
+        console.log(chalk.red(error));
       }
     }
   }
