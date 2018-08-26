@@ -143,7 +143,9 @@ class Downloader {
     this.spinner.stop();
 
     if (showProgress) {
-      const message = `Downloading ${helpers.truncate(fileName, 50)}`;
+      const message = `Downloading and converting to mp3 ${helpers.truncate(
+        fileName
+      )}`;
       const progressBar = this.makeProgressBar(message, totalSeconds);
       this.initDownloadMessage();
 
