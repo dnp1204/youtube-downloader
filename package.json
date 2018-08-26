@@ -1,24 +1,22 @@
 {
   "name": "youtube-download",
   "version": "1.0.0",
-  "description": "",
+  "description": "Youtube downloader",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "node index.js"
   },
-  "author": "",
+  "author": "Doanh Pham",
   "license": "ISC",
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.0.15",
-    "ansi": "^0.3.1",
+    "ascii-progress": "^1.0.5",
     "axios": "^0.18.0",
     "bluebird": "^3.5.1",
     "chalk": "^2.4.1",
     "cheerio": "^1.0.0-rc.2",
     "cli-spinner": "^0.2.8",
     "fluent-ffmpeg": "^2.1.2",
-    "get-cursor-position": "^1.0.5",
-    "nodemon": "^1.18.3",
     "youtube-dl": "^1.12.2"
   },
   "devDependencies": {

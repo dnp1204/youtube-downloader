@@ -3,9 +3,9 @@ const chalk = require('chalk');
 const fs = require('fs');
 const os = require('os');
 const youtubedl = require('youtube-dl');
+const ProgressBar = require('ascii-progress');
 
 const DownloadItem = require('./download-item');
-const ProgressBar = require('../utils/progress-bar');
 const Spinner = require('../utils/spinner');
 
 const converter = require('../converter');
@@ -37,7 +37,7 @@ class Downloader {
     } else {
       try {
         const result = await this.downloadVideo(link);
-        process.stdout.write(`\n${result}\n`);
+        process.stdout.write(chalk.green(`${result}\n`));
       } catch (error) {
         console.log(chalk.red(error));
       }
@@ -48,30 +48,30 @@ class Downloader {
     const videos = await youtube.getUrlsFromPlaylist(link);
     let finished = 0;
 
-    this.spinner.setSpinnerTitle(
-      `Get infos and prepare to download ${videos.length} videos`
-    );
     this.spinner.stop();
 
-    const progressBar = new ProgressBar();
-    progressBar.setTitle(`Current progress (0/${videos.length})`);
-    progressBar.init(videos.length);
+    const message = `Downloading ${videos.length} videos :token1`;
+    const progressBar = this.makeProgressBar(message, videos.length);
+
+    this.initDownloadMessage();
+    progressBar.update(finished / videos.length, {
+      token1: `(${finished}/${videos.length})`
+    });
 
     return Promise.map(
       videos,
       video => {
         return new Promise(async resolve => {
           if (this.includedIndex) {
-            await this.downloadVideo(video.link, false, video.index);
+            await this.downloadVideo(video.link, true, video.index);
           } else {
-            await this.downloadVideo(video.link, false);
+            await this.downloadVideo(video.link, true);
           }
           resolve();
           finished += 1;
-          progressBar.setTitle(
-            `Current progress ${chalk.blue(`(${finished}/${videos.length})`)}`
-          );
-          progressBar.update(finished);
+          progressBar.update(finished / videos.length, {
+            token1: `(${finished}/${videos.length})`
+          });
         });
       },
       { concurrency: 4 }
@@ -117,13 +117,14 @@ class Downloader {
     this.spinner.stop();
 
     if (showProgress) {
-      const progressBar = new ProgressBar();
-      this.initDownloadMessage(fileName, progressBar, size);
+      const message = `Downloading ${helpers.truncate(fileName, 50)}`;
+      const progressBar = this.makeProgressBar(message, size);
+      this.initDownloadMessage();
 
       let pos = 0;
       stream.on('data', chunk => {
         pos += chunk.length;
-        progressBar.update(pos);
+        progressBar.update(pos / size);
       });
     }
 
@@ -142,11 +143,12 @@ class Downloader {
     this.spinner.stop();
 
     if (showProgress) {
-      const progressBar = new ProgressBar();
-      this.initDownloadMessage(fileName, progressBar, totalSeconds);
+      const message = `Downloading ${helpers.truncate(fileName, 50)}`;
+      const progressBar = this.makeProgressBar(message, totalSeconds);
+      this.initDownloadMessage();
 
       observer.on('progress', progress => {
-        progressBar.update(progress);
+        progressBar.update(progress / totalSeconds);
       });
     }
 
@@ -155,15 +157,18 @@ class Downloader {
     });
   }
 
-  initDownloadMessage(fileName, progressBar, size) {
+  initDownloadMessage() {
     process.stdout.clearLine();
     process.stdout.cursorTo(0);
-    console.log(
-      `Start downloading ${helpers.truncate(
-        fileName
-      )} and save to ${SAVED_LOCATION}`
-    );
-    progressBar.init(size);
+  }
+
+  makeProgressBar(message, size) {
+    const progressBar = new ProgressBar({
+      schema: `${message}.blue [:bar.green] :percent.green`,
+      total: size
+    });
+
+    return progressBar;
   }
 }
 
