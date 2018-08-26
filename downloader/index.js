@@ -60,18 +60,15 @@ class Downloader {
 
     return Promise.map(
       videos,
-      video => {
-        return new Promise(async resolve => {
-          if (this.includedIndex) {
-            await this.downloadVideo(video.link, true, video.index);
-          } else {
-            await this.downloadVideo(video.link, true);
-          }
-          resolve();
-          finished += 1;
-          progressBar.update(finished / videos.length, {
-            token1: `(${finished}/${videos.length})`
-          });
+      async video => {
+        if (this.includedIndex) {
+          await this.downloadVideo(video.link, true, video.index);
+        } else {
+          await this.downloadVideo(video.link, true);
+        }
+        finished += 1;
+        progressBar.update(finished / videos.length, {
+          token1: `(${finished}/${videos.length})`
         });
       },
       { concurrency: 4 }
