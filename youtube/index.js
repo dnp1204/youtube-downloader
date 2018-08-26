@@ -1,6 +1,6 @@
+const { Promise } = require('bluebird');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { Promise } = require('bluebird');
 
 const Video = require('./video');
 
