@@ -3,11 +3,13 @@ const chalk = require('chalk');
 const fs = require('fs');
 const os = require('os');
 const youtubedl = require('youtube-dl');
-const converter = require('../converter');
 
-const helpers = require('../utils/helpers');
+const DownloadItem = require('./download-item');
 const ProgressBar = require('../utils/progress-bar');
 const Spinner = require('../utils/spinner');
+
+const converter = require('../converter');
+const helpers = require('../utils/helpers');
 const youtube = require('../youtube');
 
 const HOME = os.homedir();
@@ -89,21 +91,29 @@ class Downloader {
         const fileName = `${index ? `${index} - ` : ''}${title}.${ext}`;
 
         if (this.toAudio) {
-          this.downloadVideoAndConvert(
+          const downloadItem = new DownloadItem(
             stream,
             title,
             duration,
-            verbose,
-            resolve
+            verbose
           );
+          this.downloadVideoAndConvert(downloadItem, resolve);
         } else {
-          this.downloadVideoOnly(stream, fileName, size, verbose, resolve);
+          const downloadItem = new DownloadItem(
+            stream,
+            fileName,
+            size,
+            verbose
+          );
+          this.downloadVideoOnly(downloadItem, resolve);
         }
       });
     });
   }
 
-  downloadVideoOnly(stream, fileName, size, showProgress, resolve) {
+  downloadVideoOnly(downloadItem, resolve) {
+    const { stream, fileName, showProgress, size } = downloadItem;
+
     this.spinner.stop();
 
     if (showProgress) {
@@ -124,14 +134,16 @@ class Downloader {
     });
   }
 
-  downloadVideoAndConvert(stream, title, duration, showProgress, resolve) {
-    const totalSeconds = helpers.toSeconds(duration);
+  downloadVideoAndConvert(downloadItem, resolve) {
+    const { stream, fileName, size, showProgress } = downloadItem;
+    const totalSeconds = helpers.toSeconds(size);
+    const observer = converter.convertToAudio(stream, fileName);
 
-    const observer = converter.convertToAudio(stream, title);
     this.spinner.stop();
+
     if (showProgress) {
       const progressBar = new ProgressBar();
-      this.initDownloadMessage(title, progressBar, totalSeconds);
+      this.initDownloadMessage(fileName, progressBar, totalSeconds);
 
       observer.on('progress', progress => {
         progressBar.update(progress);
