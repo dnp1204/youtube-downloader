@@ -31,7 +31,7 @@ class Downloader {
 
     if (youtube.isPlayList(link) && this.downloadAll) {
       await this.downloadPlaylist(link);
-      process.stdout.write('\nFinished downloading playlist\n');
+      process.stdout.write(chalk.green('\nFinished downloading playlist\n'));
     } else {
       try {
         const result = await this.downloadVideo(link);
@@ -47,6 +47,7 @@ class Downloader {
     let finished = 0;
 
     this.spinner.stop();
+
     const progressBar = new ProgressBar();
     progressBar.setTitle(`Current progress (0/${videos.length})`);
     progressBar.init(videos.length);
@@ -87,7 +88,13 @@ class Downloader {
         this.spinner.stop();
 
         if (this.toAudio) {
-          this.downloadVideoAndConvert(stream, title, duration, resolve);
+          this.downloadVideoAndConvert(
+            stream,
+            title,
+            duration,
+            verbose,
+            resolve
+          );
         } else {
           this.downloadVideoOnly(stream, fileName, size, verbose, resolve);
         }
@@ -122,9 +129,26 @@ class Downloader {
     });
   }
 
-  async downloadVideoAndConvert(stream, title, duration, resolve) {
-    const result = await converter.convertToAudio(stream, title, duration);
-    resolve(result);
+  downloadVideoAndConvert(stream, title, duration, showProgress, resolve) {
+    const totalSeconds = helpers.toSeconds(duration);
+    const progressBar = new ProgressBar();
+
+    const observer = converter.convertToAudio(stream, title);
+    if (showProgress) {
+      console.log(
+        `Start downloading ${helpers.truncate(
+          title
+        )} and save to ${SAVED_LOCATION}`
+      );
+      progressBar.init(totalSeconds);
+      observer.on('progress', progress => {
+        progressBar.update(progress);
+      });
+    }
+
+    observer.on('finished', message => {
+      resolve(message);
+    });
   }
 }
 
