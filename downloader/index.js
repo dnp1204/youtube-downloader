@@ -16,9 +16,9 @@ const SAVED_LOCATION = `${HOME}/Downloads`;
 class Downloader {
   constructor() {
     this.spinner = new Spinner();
-    this.toAudio = false;
     this.downloadAll = true;
     this.includedIndex = false;
+    this.toAudio = true;
   }
 
   async download(link) {
@@ -59,7 +59,7 @@ class Downloader {
           if (this.includedIndex) {
             await this.downloadVideo(video.link, false, video.index);
           } else {
-            await this.downloadVideo(video.link, true);
+            await this.downloadVideo(video.link, false);
           }
           resolve();
           finished += 1;
@@ -104,13 +104,7 @@ class Downloader {
 
   downloadVideoOnly(stream, fileName, size, showProgress, resolve) {
     if (showProgress) {
-      process.stdout.clearLine();
-      process.stdout.cursorTo(0);
-      console.log(
-        `Start downloading ${helpers.truncate(
-          fileName
-        )} and save to ${SAVED_LOCATION}`
-      );
+      this.initDownloadMessage();
 
       const progressBar = new ProgressBar();
       progressBar.init(size);
@@ -131,16 +125,14 @@ class Downloader {
 
   downloadVideoAndConvert(stream, title, duration, showProgress, resolve) {
     const totalSeconds = helpers.toSeconds(duration);
-    const progressBar = new ProgressBar();
 
     const observer = converter.convertToAudio(stream, title);
     if (showProgress) {
-      console.log(
-        `Start downloading ${helpers.truncate(
-          title
-        )} and save to ${SAVED_LOCATION}`
-      );
+      this.initDownloadMessage(title);
+
+      const progressBar = new ProgressBar();
       progressBar.init(totalSeconds);
+
       observer.on('progress', progress => {
         progressBar.update(progress);
       });
@@ -149,6 +141,16 @@ class Downloader {
     observer.on('finished', message => {
       resolve(message);
     });
+  }
+
+  initDownloadMessage(fileName) {
+    process.stdout.clearLine();
+    process.stdout.cursorTo(0);
+    console.log(
+      `Start downloading ${helpers.truncate(
+        fileName
+      )} and save to ${SAVED_LOCATION}`
+    );
   }
 }
 
