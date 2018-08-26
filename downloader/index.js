@@ -16,7 +16,7 @@ const SAVED_LOCATION = `${HOME}/Downloads`;
 class Downloader {
   constructor() {
     this.spinner = new Spinner();
-    this.toAudio = true;
+    this.toAudio = false;
     this.downloadAll = true;
     this.includedIndex = false;
   }

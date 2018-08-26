@@ -1,4 +1,7 @@
 const chalk = require('chalk');
+const ansi = require('ansi');
+
+const cursor = ansi(process.stdout);
 
 class ProgressBar {
   constructor() {
@@ -28,6 +31,8 @@ class ProgressBar {
     const emptyBar = this.getBar(emptyBarLength, '-', chalk);
     const percentageProgress = (currentProgress * 100).toFixed(2);
 
+    const currentRow = process.stdout.rows;
+    cursor.goto(0, currentRow - 12);
     process.stdout.clearLine();
     process.stdout.cursorTo(0);
     process.stdout.write(
