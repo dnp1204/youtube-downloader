@@ -17,11 +17,16 @@ class Downloader {
     this.spinner = new Spinner();
   }
 
-  async download(link, downloadAll = true) {
+  async download(link, downloadAll = true, includedIndex = false) {
+    if (!youtube.isYoutubeSite(link)) {
+      console.log(chalk.red('We only support youtube site!'));
+      return;
+    }
+
     this.spinner.start();
 
-    if (link.includes('&list=') && downloadAll) {
-      await this.downloadPlaylist(link);
+    if (youtube.isPlayList(link) && downloadAll) {
+      await this.downloadPlaylist(link, includedIndex);
       process.stdout.write('\nFinished downloading playlist\n');
     } else {
       try {
@@ -33,7 +38,7 @@ class Downloader {
     }
   }
 
-  async downloadPlaylist(link) {
+  async downloadPlaylist(link, includedIndex) {
     const videos = await youtube.getUrlsFromPlaylist(link);
     let finished = 0;
 
@@ -45,7 +50,11 @@ class Downloader {
       videos,
       video => {
         return new Promise(async resolve => {
-          await this.downloadVideo(video.link, false, video.index);
+          if (includedIndex) {
+            await this.downloadVideo(video.link, false, video.index);
+          } else {
+            await this.downloadVideo(video.link, false);
+          }
           resolve();
           finished += 1;
           progressBar.setTitle(

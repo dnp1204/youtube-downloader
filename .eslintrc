@@ -5,6 +5,7 @@
     "arrow-parens": "off",
     "no-console": "off",
     "comma-dangle": "off",
-    "arrow-body-style": "off"
+    "arrow-body-style": "off",
+    "operator-linebreak": "off"
   }
 }
