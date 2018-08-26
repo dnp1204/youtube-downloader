@@ -36,7 +36,11 @@ class Youtube {
           const href = $(element)
             .find('a')
             .attr('href');
-          const video = new Video(href, thumbnail);
+          const title = $(element)
+            .find('.playlist-video-description > h4')
+            .text()
+            .trim();
+          const video = new Video(href, thumbnail, title);
           videos.push(video);
         });
       resolve(videos);
@@ -50,13 +54,14 @@ class Youtube {
       $('#pl-video-table tbody')
         .find('tr')
         .each((index, element) => {
+          const title = element.attribs['data-title'].trim();
           const thumbnail = $(element)
             .find('.pl-video-thumbnail img')
             .attr('data-thumb');
           const href = $(element)
             .find('a')
             .attr('href');
-          const video = new Video(href, thumbnail);
+          const video = new Video(href, thumbnail, title);
           videos.push(video);
         });
       resolve(videos);

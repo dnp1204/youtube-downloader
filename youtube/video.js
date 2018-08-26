@@ -3,9 +3,10 @@ const { URL } = require('url');
 const YOUTUBE_URL = 'https://www.youtube.com/';
 
 class Video {
-  constructor(link, thumbnail = '') {
+  constructor(link, thumbnail = '', title = '') {
     this.link = `${YOUTUBE_URL}${link}`;
     this.thumbnail = thumbnail;
+    this.title = title;
     this.index = this.getIndex();
   }
 
