@@ -46,6 +46,9 @@ class Downloader {
     const videos = await youtube.getUrlsFromPlaylist(link);
     let finished = 0;
 
+    this.spinner.setSpinnerTitle(
+      `Get infos and prepare to download ${videos.length} videos`
+    );
     this.spinner.stop();
 
     const progressBar = new ProgressBar();
@@ -85,8 +88,6 @@ class Downloader {
         const { title, ext, size, duration } = info;
         const fileName = `${index ? `${index} - ` : ''}${title}.${ext}`;
 
-        this.spinner.stop();
-
         if (this.toAudio) {
           this.downloadVideoAndConvert(
             stream,
@@ -103,11 +104,11 @@ class Downloader {
   }
 
   downloadVideoOnly(stream, fileName, size, showProgress, resolve) {
-    if (showProgress) {
-      this.initDownloadMessage(fileName);
+    this.spinner.stop();
 
+    if (showProgress) {
       const progressBar = new ProgressBar();
-      progressBar.init(size);
+      this.initDownloadMessage(fileName, progressBar, size);
 
       let pos = 0;
       stream.on('data', chunk => {
@@ -127,11 +128,10 @@ class Downloader {
     const totalSeconds = helpers.toSeconds(duration);
 
     const observer = converter.convertToAudio(stream, title);
+    this.spinner.stop();
     if (showProgress) {
-      this.initDownloadMessage(title);
-
       const progressBar = new ProgressBar();
-      progressBar.init(totalSeconds);
+      this.initDownloadMessage(title, progressBar, totalSeconds);
 
       observer.on('progress', progress => {
         progressBar.update(progress);
@@ -143,7 +143,7 @@ class Downloader {
     });
   }
 
-  initDownloadMessage(fileName) {
+  initDownloadMessage(fileName, progressBar, size) {
     process.stdout.clearLine();
     process.stdout.cursorTo(0);
     console.log(
@@ -151,6 +151,7 @@ class Downloader {
         fileName
       )} and save to ${SAVED_LOCATION}`
     );
+    progressBar.init(size);
   }
 }
 
