@@ -6,7 +6,7 @@ const youtubedl = require('youtube-dl');
 const converter = require('../converter');
 
 const helpers = require('../utils/helpers');
-const progressBar = require('../utils/progress-bar');
+const ProgressBar = require('../utils/progress-bar');
 const Spinner = require('../utils/spinner');
 const youtube = require('../youtube');
 
@@ -18,9 +18,10 @@ class Downloader {
     this.spinner = new Spinner();
     this.toAudio = true;
     this.downloadAll = true;
+    this.includedIndex = false;
   }
 
-  async download(link, includedIndex = false) {
+  async download(link) {
     if (!youtube.isYoutubeSite(link)) {
       console.error(chalk.red('We only support youtube site!'));
       return;
@@ -29,7 +30,7 @@ class Downloader {
     this.spinner.start();
 
     if (youtube.isPlayList(link) && this.downloadAll) {
-      await this.downloadPlaylist(link, includedIndex);
+      await this.downloadPlaylist(link);
       process.stdout.write('\nFinished downloading playlist\n');
     } else {
       try {
@@ -41,11 +42,12 @@ class Downloader {
     }
   }
 
-  async downloadPlaylist(link, includedIndex) {
+  async downloadPlaylist(link) {
     const videos = await youtube.getUrlsFromPlaylist(link);
     let finished = 0;
 
     this.spinner.stop();
+    const progressBar = new ProgressBar();
     progressBar.setTitle(`Current progress (0/${videos.length})`);
     progressBar.init(videos.length);
 
@@ -53,7 +55,7 @@ class Downloader {
       videos,
       video => {
         return new Promise(async resolve => {
-          if (includedIndex) {
+          if (this.includedIndex) {
             await this.downloadVideo(video.link, false, video.index);
           } else {
             await this.downloadVideo(video.link, false);
@@ -79,50 +81,50 @@ class Downloader {
       });
 
       stream.on('info', info => {
-        const { title, ext, size } = info;
+        const { title, ext, size, duration } = info;
         const fileName = `${index ? `${index} - ` : ''}${title}.${ext}`;
 
         this.spinner.stop();
 
         if (this.toAudio) {
-          this.downloadVideoAndConvert(link, title).then(result => {
-            resolve(result);
-          });
+          this.downloadVideoAndConvert(stream, title, duration, resolve);
         } else {
-          if (verbose) {
-            process.stdout.clearLine();
-            process.stdout.cursorTo(0);
-            console.log(
-              `Start downloading ${helpers.truncate(
-                fileName
-              )} and save to ${SAVED_LOCATION}`
-            );
-
-            progressBar.init(size);
-
-            let pos = 0;
-            stream.on('data', chunk => {
-              pos += chunk.length;
-              progressBar.update(pos);
-            });
-          }
-
-          stream.pipe(fs.createWriteStream(`${SAVED_LOCATION}/${fileName}`));
-
-          stream.on('end', () => {
-            resolve(`Finished downloading ${fileName}`);
-          });
+          this.downloadVideoOnly(stream, fileName, size, verbose, resolve);
         }
       });
     });
   }
 
-  downloadVideoAndConvert(link, title) {
-    return new Promise(async resolve => {
-      const stream = youtubedl(link);
-      const result = await converter.convertToAudio(stream, title);
-      resolve(result);
+  downloadVideoOnly(stream, fileName, size, showProgress, resolve) {
+    if (showProgress) {
+      process.stdout.clearLine();
+      process.stdout.cursorTo(0);
+      console.log(
+        `Start downloading ${helpers.truncate(
+          fileName
+        )} and save to ${SAVED_LOCATION}`
+      );
+
+      const progressBar = new ProgressBar();
+      progressBar.init(size);
+
+      let pos = 0;
+      stream.on('data', chunk => {
+        pos += chunk.length;
+        progressBar.update(pos);
+      });
+    }
+
+    stream.pipe(fs.createWriteStream(`${SAVED_LOCATION}/${fileName}`));
+
+    stream.on('end', () => {
+      resolve(`Finished downloading ${fileName}`);
     });
+  }
+
+  async downloadVideoAndConvert(stream, title, duration, resolve) {
+    const result = await converter.convertToAudio(stream, title, duration);
+    resolve(result);
   }
 }
 

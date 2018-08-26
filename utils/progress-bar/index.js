@@ -50,4 +50,4 @@ class ProgressBar {
   }
 }
 
-module.exports = new ProgressBar();
+module.exports = ProgressBar;
