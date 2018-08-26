@@ -1048,6 +1048,10 @@ gauge@~2.7.3:
     strip-ansi "^3.0.1"
     wide-align "^1.1.0"
 
+get-cursor-position@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/get-cursor-position/-/get-cursor-position-1.0.5.tgz#1558c35aa056726eae704d5590aeaa5945989f5a"
+
 get-stream@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/get-stream/-/get-stream-3.0.0.tgz#8e943d1358dc37555054ecbe2edb05aa174ede14"

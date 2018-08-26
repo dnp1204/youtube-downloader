@@ -59,7 +59,7 @@ class Downloader {
           if (this.includedIndex) {
             await this.downloadVideo(video.link, false, video.index);
           } else {
-            await this.downloadVideo(video.link, false);
+            await this.downloadVideo(video.link, true);
           }
           resolve();
           finished += 1;

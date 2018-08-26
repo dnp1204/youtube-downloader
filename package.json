@@ -17,6 +17,7 @@
     "cheerio": "^1.0.0-rc.2",
     "cli-spinner": "^0.2.8",
     "fluent-ffmpeg": "^2.1.2",
+    "get-cursor-position": "^1.0.5",
     "nodemon": "^1.18.3",
     "youtube-dl": "^1.12.2"
   },

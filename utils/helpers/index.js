@@ -1,3 +1,5 @@
+const getCursorPosition = require('get-cursor-position');
+
 class Helper {
   truncate(string, limit = 40) {
     if (string.length > limit) {
@@ -27,6 +29,10 @@ class Helper {
       parseInt(minutes, 10) * 60 +
       parseInt(seconds, 10)
     );
+  }
+
+  getCurrentPosition() {
+    return getCursorPosition.sync();
   }
 }
 
