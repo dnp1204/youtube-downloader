@@ -3,6 +3,7 @@ const chalk = require('chalk');
 const fs = require('fs');
 const os = require('os');
 const youtubedl = require('youtube-dl');
+const converter = require('../converter');
 
 const helpers = require('../utils/helpers');
 const progressBar = require('../utils/progress-bar');
@@ -15,9 +16,11 @@ const SAVED_LOCATION = `${HOME}/Downloads`;
 class Downloader {
   constructor() {
     this.spinner = new Spinner();
+    this.toAudio = true;
+    this.downloadAll = true;
   }
 
-  async download(link, downloadAll = true, includedIndex = false) {
+  async download(link, includedIndex = false) {
     if (!youtube.isYoutubeSite(link)) {
       console.error(chalk.red('We only support youtube site!'));
       return;
@@ -25,7 +28,7 @@ class Downloader {
 
     this.spinner.start();
 
-    if (youtube.isPlayList(link) && downloadAll) {
+    if (youtube.isPlayList(link) && this.downloadAll) {
       await this.downloadPlaylist(link, includedIndex);
       process.stdout.write('\nFinished downloading playlist\n');
     } else {
@@ -81,30 +84,44 @@ class Downloader {
 
         this.spinner.stop();
 
-        if (verbose) {
-          process.stdout.clearLine();
-          process.stdout.cursorTo(0);
-          console.log(
-            `Start downloading ${helpers.truncate(
-              fileName
-            )} and save to ${SAVED_LOCATION}`
-          );
+        if (this.toAudio) {
+          this.downloadVideoAndConvert(link, title).then(result => {
+            resolve(result);
+          });
+        } else {
+          if (verbose) {
+            process.stdout.clearLine();
+            process.stdout.cursorTo(0);
+            console.log(
+              `Start downloading ${helpers.truncate(
+                fileName
+              )} and save to ${SAVED_LOCATION}`
+            );
 
-          progressBar.init(size);
+            progressBar.init(size);
 
-          let pos = 0;
-          stream.on('data', chunk => {
-            pos += chunk.length;
-            progressBar.update(pos);
+            let pos = 0;
+            stream.on('data', chunk => {
+              pos += chunk.length;
+              progressBar.update(pos);
+            });
+          }
+
+          stream.pipe(fs.createWriteStream(`${SAVED_LOCATION}/${fileName}`));
+
+          stream.on('end', () => {
+            resolve(`Finished downloading ${fileName}`);
           });
         }
-
-        stream.pipe(fs.createWriteStream(`${SAVED_LOCATION}/${fileName}`));
-
-        stream.on('end', () => {
-          resolve(`Finished downloading ${fileName}`);
-        });
       });
+    });
+  }
+
+  downloadVideoAndConvert(link, title) {
+    return new Promise(async resolve => {
+      const stream = youtubedl(link);
+      const result = await converter.convertToAudio(stream, title);
+      resolve(result);
     });
   }
 }
