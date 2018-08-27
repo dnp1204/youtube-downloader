@@ -208,7 +208,7 @@ class Downloader {
 
     this.spinner.stop();
 
-    if (this.this.displayProgress) {
+    if (this.displayProgress) {
       const message = `Downloading and converting to mp3 ${helpers.truncate(
         fileName
       )}`;

@@ -13,6 +13,7 @@ const SAVED_LOCATION = `${HOME}/Downloads`;
 class Converter {
   constructor() {
     this.eventEmitter = new EventEmitter();
+    this.eventEmitter.setMaxListeners(0);
   }
 
   convertToAudio(saveLocaiton, stream, title, toFormat = 'mp3') {
