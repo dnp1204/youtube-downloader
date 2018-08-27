@@ -11,7 +11,7 @@ class Parser {
       if (this.isLink(arg)) {
         this.params.links.push(arg);
       } else if (this.isArgument(arg)) {
-        this.params[arg.substring(1)] = true;
+        this.params[arg.split('-').join('')] = true;
       }
     });
   }

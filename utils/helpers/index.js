@@ -1,3 +1,4 @@
+const chalk = require('chalk');
 const fs = require('fs');
 
 class Helper {
@@ -31,15 +32,15 @@ class Helper {
     );
   }
 
-  createPlaylistDirName(saveLocation, index) {
+  createPlaylistDirName(saveLocation) {
     const now = Date.now();
-    const name = `playlist-${index}-${now}`;
+    const name = `playlist-${now}`;
     const dirName = `${saveLocation}/${name}`;
 
     return new Promise((resolve, reject) => {
       fs.exists(dirName, exists => {
         if (exists) {
-          this.createPlaylistDirName(saveLocation, index + 1);
+          this.createPlaylistDirName(saveLocation);
         } else {
           fs.mkdir(dirName, err => {
             if (err) {
@@ -50,6 +51,14 @@ class Helper {
         }
       });
     });
+  }
+
+  displaySuccessMessage(message) {
+    process.stdout.write(chalk.green(`${message}\n`));
+  }
+
+  displayErrorMessage(error) {
+    console.log(chalk.red(error));
   }
 }
 

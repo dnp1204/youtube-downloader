@@ -1,11 +1,10 @@
 const { Promise } = require('bluebird');
-const chalk = require('chalk');
 const fs = require('fs');
 const os = require('os');
 const youtubedl = require('youtube-dl');
-const ProgressBar = require('ascii-progress');
 
 const DownloadItem = require('./download-item');
+const ProgressBarAscii = require('../utils/progress-bar/progress-bar-ascii');
 const Spinner = require('../utils/spinner');
 
 const converter = require('../converter');
@@ -17,40 +16,30 @@ const SAVED_LOCATION = `${HOME}/Downloads`;
 
 class Downloader {
   constructor(builder) {
-    this.spinner = new Spinner();
+    this.concurrency = 4;
     this.downloadAll = builder.downloadAll;
     this.includedIndex = builder.includedIndex;
+    this.spinner = new Spinner();
     this.toAudio = builder.toAudio;
-    this.concurrency = 4;
+    this.displaySuccessMessage = false;
+    this.displayProgress = true;
   }
 
   download(links) {
-    let numberOfPlayLists = 0;
+    const totalLinks = links.length;
 
     this.spinner.start();
 
-    return Promise.map(
-      links,
-      async (link, index) => {
-        if (!youtube.isYoutubeSite(link)) {
-          console.error(chalk.red('We only support youtube site!'));
-        } else if (youtube.isPlayList(link) && this.downloadAll) {
-          numberOfPlayLists += 1;
-          const orderNumber = numberOfPlayLists;
-          this.adjustConcurrency(numberOfPlayLists);
-          const saveLocation = await helpers.createPlaylistDirName(
-            SAVED_LOCATION,
-            index
-          );
-          await this.downloadHelper(link, saveLocation, orderNumber);
-          this.numberOfPlayLists -= 1;
-          this.adjustConcurrency(numberOfPlayLists);
-        } else {
-          await this.downloadHelper(link);
-        }
-      },
-      { concurrency: 4 }
-    );
+    if (totalLinks === 0) {
+      helpers.displayErrorMessage('You must provide a link!');
+      return null;
+    }
+
+    if (totalLinks > 1) {
+      return this.downloadMultipleLinks(links);
+    }
+
+    return this.downloadHelper(links[0]);
   }
 
   adjustConcurrency(numberOfPlayLists) {
@@ -63,63 +52,105 @@ class Downloader {
     }
   }
 
-  async downloadHelper(link, saveLocation = null, index = null) {
+  downloadMultipleLinks(links) {
+    const totalLinks = links.length;
+
+    let numberOfPlayLists = 0;
+    let finishedLinks = 0;
+
+    this.spinner.stop();
+    const message = `Downloading videos from ${totalLinks} links :progress`;
+    const progressBar = new ProgressBarAscii(message, totalLinks, 'red');
+    progressBar.update(finishedLinks, {
+      progress: `(${finishedLinks}/${totalLinks})`
+    });
+
+    return Promise.map(
+      links,
+      async link => {
+        if (youtube.isPlayList(link) && this.downloadAll) {
+          numberOfPlayLists += 1;
+          const playListNumber = numberOfPlayLists;
+          this.adjustConcurrency(numberOfPlayLists);
+          const saveLocation = await helpers.createPlaylistDirName(
+            SAVED_LOCATION
+          );
+          await this.downloadHelper(link, saveLocation, playListNumber);
+          numberOfPlayLists -= 1;
+          finishedLinks += 1;
+          this.adjustConcurrency(numberOfPlayLists);
+        } else {
+          await this.downloadHelper(link);
+          finishedLinks += 1;
+        }
+
+        progressBar.update(finishedLinks, {
+          progress: `(${finishedLinks}/${totalLinks})`
+        });
+      },
+      { concurrency: 4 }
+    );
+  }
+
+  async downloadHelper(link, saveLocation, playListNumber) {
     if (!youtube.isYoutubeSite(link)) {
-      console.error(chalk.red('We only support youtube site!'));
+      helpers.displayErrorMessage('We only support youtube site!');
       return;
     }
 
     if (youtube.isPlayList(link) && this.downloadAll) {
-      await this.downloadPlaylist(link, saveLocation, index);
-      process.stdout.write(
-        chalk.green(
-          `Finished downloading playlist${index ? ` ${index}` : ''}\n`
-        )
-      );
+      await this.downloadPlaylist(link, saveLocation, playListNumber);
+      if (this.displaySuccessMessage) {
+        const message = `Finished downloading playlist${
+          playListNumber ? ` ${playListNumber}` : ''
+        }`;
+        helpers.displaySuccessMessage(message);
+      }
     } else {
       try {
         const result = await this.downloadVideo(link);
-        process.stdout.write(chalk.green(`${result}\n`));
+        if (this.displaySuccessMessage) {
+          helpers.displaySuccessMessage(result);
+        }
       } catch (error) {
-        console.log(chalk.red(error));
+        helpers.displayErrorMessage(error);
       }
     }
   }
 
-  async downloadPlaylist(link, saveLocation, index) {
+  async downloadPlaylist(link, saveLocation, playListNumber) {
     const videos = await youtube.getUrlsFromPlaylist(link);
     let finished = 0;
 
     this.spinner.stop();
 
     const message = `Downloading ${videos.length} videos${
-      index ? ` from playlist ${index}` : ''
-    } :token1`;
-    const progressBar = this.makeProgressBar(message, videos.length);
+      playListNumber ? ` from playlist ${playListNumber}` : ''
+    } :progress`;
+    const progressBar = new ProgressBarAscii(message, videos.length, 'yellow');
 
-    this.initDownloadMessage();
-    progressBar.update(finished / videos.length, {
-      token1: `(${finished}/${videos.length})`
+    progressBar.update(finished, {
+      progress: `(${finished}/${videos.length})`
     });
 
     return Promise.map(
       videos,
       async video => {
         if (this.includedIndex) {
-          await this.downloadVideo(video.link, saveLocation, true, video.index);
+          await this.downloadVideo(video.link, saveLocation, video.index);
         } else {
-          await this.downloadVideo(video.link, saveLocation, true);
+          await this.downloadVideo(video.link, saveLocation);
         }
         finished += 1;
-        progressBar.update(finished / videos.length, {
-          token1: `(${finished}/${videos.length})`
+        progressBar.update(finished, {
+          progress: `(${finished}/${videos.length})`
         });
       },
       { concurrency: this.concurrency }
     );
   }
 
-  downloadVideo(link, saveLocation = null, verbose = true, index = null) {
+  downloadVideo(link, saveLocation = null, index = null) {
     return new Promise((resolve, reject) => {
       const stream = youtubedl(link);
 
@@ -130,22 +161,13 @@ class Downloader {
       stream.on('info', info => {
         const { title, ext, size, duration } = info;
         const fileName = `${index ? `${index} - ` : ''}${title}.${ext}`;
+        const downloadItem = new DownloadItem(stream, fileName, size);
 
         if (this.toAudio) {
-          const downloadItem = new DownloadItem(
-            stream,
-            title,
-            duration,
-            verbose
-          );
+          downloadItem.size = duration;
+          downloadItem.fileName = title;
           this.downloadVideoAndConvert(saveLocation, downloadItem, resolve);
         } else {
-          const downloadItem = new DownloadItem(
-            stream,
-            fileName,
-            size,
-            verbose
-          );
           this.downloadVideoOnly(saveLocation, downloadItem, resolve);
         }
       });
@@ -153,19 +175,18 @@ class Downloader {
   }
 
   downloadVideoOnly(saveLocation, downloadItem, resolve) {
-    const { stream, fileName, showProgress, size } = downloadItem;
+    const { stream, fileName, size } = downloadItem;
 
     this.spinner.stop();
 
-    if (showProgress) {
+    if (this.displayProgress) {
       const message = `Downloading ${helpers.truncate(fileName, 50)}`;
-      const progressBar = this.makeProgressBar(message, size);
-      this.initDownloadMessage();
+      const progressBar = new ProgressBarAscii(message, size);
 
       let pos = 0;
       stream.on('data', chunk => {
         pos += chunk.length;
-        progressBar.update(pos / size);
+        progressBar.update(pos);
       });
     }
 
@@ -179,41 +200,26 @@ class Downloader {
   }
 
   downloadVideoAndConvert(saveLocation, downloadItem, resolve) {
-    const { stream, fileName, size, showProgress } = downloadItem;
+    const { stream, fileName, size } = downloadItem;
     const totalSeconds = helpers.toSeconds(size);
     const observer = converter.convertToAudio(saveLocation, stream, fileName);
 
     this.spinner.stop();
 
-    if (showProgress) {
+    if (this.this.displayProgress) {
       const message = `Downloading and converting to mp3 ${helpers.truncate(
         fileName
       )}`;
-      const progressBar = this.makeProgressBar(message, totalSeconds);
-      this.initDownloadMessage();
+      const progressBar = new ProgressBarAscii(message, totalSeconds);
 
       observer.on('progress', progress => {
-        progressBar.update(progress / totalSeconds);
+        progressBar.update(progress);
       });
     }
 
     observer.on('finished', message => {
       resolve(message);
     });
-  }
-
-  initDownloadMessage() {
-    process.stdout.clearLine();
-    process.stdout.cursorTo(0);
-  }
-
-  makeProgressBar(message, size) {
-    const progressBar = new ProgressBar({
-      schema: `${message}.blue [:bar.green] :percent.green`,
-      total: size
-    });
-
-    return progressBar;
   }
 }
 
