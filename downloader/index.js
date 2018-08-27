@@ -33,7 +33,7 @@ class Downloader {
 
     if (youtube.isPlayList(link) && this.downloadAll) {
       await this.downloadPlaylist(link);
-      process.stdout.write(chalk.green('\nFinished downloading playlist\n'));
+      process.stdout.write(chalk.green('Finished downloading playlist\n'));
     } else {
       try {
         const result = await this.downloadVideo(link);
