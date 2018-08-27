@@ -139,7 +139,7 @@ class Downloader {
     return Promise.map(
       videos,
       async video => {
-        await this.downloadVideo(video, saveLocation);
+        await this.downloadVideo(video.link, saveLocation, video.index);
         finished += 1;
         progressBar.update(finished, {
           progress: `(${finished}/${videos.length})`
@@ -149,8 +149,7 @@ class Downloader {
     );
   }
 
-  downloadVideo(video, saveLocation = null) {
-    const { link, index } = video;
+  downloadVideo(link, saveLocation = null, index) {
     return new Promise((resolve, reject) => {
       const stream = youtubedl(link);
 
@@ -161,7 +160,7 @@ class Downloader {
       stream.on('info', info => {
         const { title, ext, size, duration } = info;
         const fileName = `${
-          this.includedIndex ? `${index} - ` : ''
+          this.includedIndex && index ? `${index} - ` : ''
         }${title}.${ext}`;
         const downloadItem = new DownloadItem(stream, fileName, size);
 
