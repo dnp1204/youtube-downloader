@@ -42,16 +42,6 @@ class Downloader {
     return this.downloadHelper(links[0]);
   }
 
-  adjustConcurrency(numberOfPlayLists) {
-    if (numberOfPlayLists > 2) {
-      this.concurrency = 1;
-    } else if (numberOfPlayLists === 2) {
-      this.concurrency = 2;
-    } else {
-      this.concurrency = 4;
-    }
-  }
-
   downloadMultipleLinks(links) {
     const totalLinks = links.length;
 
@@ -72,10 +62,12 @@ class Downloader {
           numberOfPlayLists += 1;
           const playListNumber = numberOfPlayLists;
           this.adjustConcurrency(numberOfPlayLists);
+
           const saveLocation = await helpers.createPlaylistDirName(
             SAVED_LOCATION
           );
           await this.downloadHelper(link, saveLocation, playListNumber);
+
           numberOfPlayLists -= 1;
           finishedLinks += 1;
           this.adjustConcurrency(numberOfPlayLists);
@@ -90,6 +82,16 @@ class Downloader {
       },
       { concurrency: 4 }
     );
+  }
+
+  adjustConcurrency(numberOfPlayLists) {
+    if (numberOfPlayLists > 2) {
+      this.concurrency = 1;
+    } else if (numberOfPlayLists === 2) {
+      this.concurrency = 2;
+    } else {
+      this.concurrency = 4;
+    }
   }
 
   async downloadHelper(link, saveLocation, playListNumber) {
@@ -120,27 +122,24 @@ class Downloader {
 
   async downloadPlaylist(link, saveLocation, playListNumber) {
     const videos = await youtube.getUrlsFromPlaylist(link);
+    const { length } = videos;
     let finished = 0;
 
     this.spinner.stop();
 
-    const message = `Downloading ${videos.length} videos${
+    const message = `Downloading ${length} videos${
       playListNumber ? ` from playlist ${playListNumber}` : ''
     } :progress`;
-    const progressBar = new ProgressBarAscii(message, videos.length, 'yellow');
+    const progressBar = new ProgressBarAscii(message, length, 'yellow');
 
     progressBar.update(finished, {
-      progress: `(${finished}/${videos.length})`
+      progress: `(${finished}/${length})`
     });
 
     return Promise.map(
       videos,
       async video => {
-        if (this.includedIndex) {
-          await this.downloadVideo(video.link, saveLocation, video.index);
-        } else {
-          await this.downloadVideo(video.link, saveLocation);
-        }
+        await this.downloadVideo(video, saveLocation);
         finished += 1;
         progressBar.update(finished, {
           progress: `(${finished}/${videos.length})`
@@ -150,7 +149,8 @@ class Downloader {
     );
   }
 
-  downloadVideo(link, saveLocation = null, index = null) {
+  downloadVideo(video, saveLocation = null) {
+    const { link, index } = video;
     return new Promise((resolve, reject) => {
       const stream = youtubedl(link);
 
@@ -160,7 +160,9 @@ class Downloader {
 
       stream.on('info', info => {
         const { title, ext, size, duration } = info;
-        const fileName = `${index ? `${index} - ` : ''}${title}.${ext}`;
+        const fileName = `${
+          this.includedIndex ? `${index} - ` : ''
+        }${title}.${ext}`;
         const downloadItem = new DownloadItem(stream, fileName, size);
 
         if (this.toAudio) {
