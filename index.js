@@ -1,3 +1,5 @@
+const chalk = require('chalk');
+
 const DownloaderBuilder = require('./downloader/builder');
 const Parser = require('./utils/parser');
 
@@ -18,7 +20,9 @@ if (parser.params.au || parser.params.audio) {
 }
 
 const downloader = downloaderBuilder.build();
-
-const [link] = parser.params.links;
-
-downloader.download(link);
+if (parser.params.links.length === 0) {
+  console.error(chalk.red('You must provide a link!'));
+} else {
+  const { links } = parser.params;
+  downloader.download(links);
+}

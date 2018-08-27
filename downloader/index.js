@@ -21,9 +21,28 @@ class Downloader {
     this.downloadAll = builder.downloadAll;
     this.includedIndex = builder.includedIndex;
     this.toAudio = builder.toAudio;
+    this.concurrency = 4;
   }
 
-  async download(link) {
+  download(links) {
+    return Promise.map(
+      links,
+      async (link, index) => {
+        if (!youtube.isYoutubeSite(link)) {
+          console.error(chalk.red('We only support youtube site!'));
+        } else {
+          if (youtube.isPlayList(link)) {
+          } else {
+            this.concurrency -= 1;
+            await this.downloadHelper(link);
+          }
+        }
+      },
+      { concurrency: 4 }
+    );
+  }
+
+  async downloadHelper(link) {
     if (!youtube.isYoutubeSite(link)) {
       console.error(chalk.red('We only support youtube site!'));
       return;
@@ -71,7 +90,7 @@ class Downloader {
           token1: `(${finished}/${videos.length})`
         });
       },
-      { concurrency: 4 }
+      { concurrency: this.concurrency }
     );
   }
 
