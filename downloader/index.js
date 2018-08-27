@@ -25,34 +25,57 @@ class Downloader {
   }
 
   download(links) {
+    let numberOfPlayLists = 0;
+
+    this.spinner.start();
+
     return Promise.map(
       links,
       async (link, index) => {
         if (!youtube.isYoutubeSite(link)) {
           console.error(chalk.red('We only support youtube site!'));
+        } else if (youtube.isPlayList(link) && this.downloadAll) {
+          numberOfPlayLists += 1;
+          const orderNumber = numberOfPlayLists;
+          this.adjustConcurrency(numberOfPlayLists);
+          const saveLocation = await helpers.createPlaylistDirName(
+            SAVED_LOCATION,
+            index
+          );
+          await this.downloadHelper(link, saveLocation, orderNumber);
+          this.numberOfPlayLists -= 1;
+          this.adjustConcurrency(numberOfPlayLists);
         } else {
-          if (youtube.isPlayList(link)) {
-          } else {
-            this.concurrency -= 1;
-            await this.downloadHelper(link);
-          }
+          await this.downloadHelper(link);
         }
       },
       { concurrency: 4 }
     );
   }
 
-  async downloadHelper(link) {
+  adjustConcurrency(numberOfPlayLists) {
+    if (numberOfPlayLists > 2) {
+      this.concurrency = 1;
+    } else if (numberOfPlayLists === 2) {
+      this.concurrency = 2;
+    } else {
+      this.concurrency = 4;
+    }
+  }
+
+  async downloadHelper(link, saveLocation = null, index = null) {
     if (!youtube.isYoutubeSite(link)) {
       console.error(chalk.red('We only support youtube site!'));
       return;
     }
 
-    this.spinner.start();
-
     if (youtube.isPlayList(link) && this.downloadAll) {
-      await this.downloadPlaylist(link);
-      process.stdout.write(chalk.green('Finished downloading playlist\n'));
+      await this.downloadPlaylist(link, saveLocation, index);
+      process.stdout.write(
+        chalk.green(
+          `Finished downloading playlist${index ? ` ${index}` : ''}\n`
+        )
+      );
     } else {
       try {
         const result = await this.downloadVideo(link);
@@ -63,13 +86,15 @@ class Downloader {
     }
   }
 
-  async downloadPlaylist(link) {
+  async downloadPlaylist(link, saveLocation, index) {
     const videos = await youtube.getUrlsFromPlaylist(link);
     let finished = 0;
 
     this.spinner.stop();
 
-    const message = `Downloading ${videos.length} videos :token1`;
+    const message = `Downloading ${videos.length} videos${
+      index ? ` from playlist ${index}` : ''
+    } :token1`;
     const progressBar = this.makeProgressBar(message, videos.length);
 
     this.initDownloadMessage();
@@ -81,9 +106,9 @@ class Downloader {
       videos,
       async video => {
         if (this.includedIndex) {
-          await this.downloadVideo(video.link, true, video.index);
+          await this.downloadVideo(video.link, saveLocation, true, video.index);
         } else {
-          await this.downloadVideo(video.link, true);
+          await this.downloadVideo(video.link, saveLocation, true);
         }
         finished += 1;
         progressBar.update(finished / videos.length, {
@@ -94,7 +119,7 @@ class Downloader {
     );
   }
 
-  downloadVideo(link, verbose = true, index = null) {
+  downloadVideo(link, saveLocation = null, verbose = true, index = null) {
     return new Promise((resolve, reject) => {
       const stream = youtubedl(link);
 
@@ -113,7 +138,7 @@ class Downloader {
             duration,
             verbose
           );
-          this.downloadVideoAndConvert(downloadItem, resolve);
+          this.downloadVideoAndConvert(saveLocation, downloadItem, resolve);
         } else {
           const downloadItem = new DownloadItem(
             stream,
@@ -121,13 +146,13 @@ class Downloader {
             size,
             verbose
           );
-          this.downloadVideoOnly(downloadItem, resolve);
+          this.downloadVideoOnly(saveLocation, downloadItem, resolve);
         }
       });
     });
   }
 
-  downloadVideoOnly(downloadItem, resolve) {
+  downloadVideoOnly(saveLocation, downloadItem, resolve) {
     const { stream, fileName, showProgress, size } = downloadItem;
 
     this.spinner.stop();
@@ -144,17 +169,19 @@ class Downloader {
       });
     }
 
-    stream.pipe(fs.createWriteStream(`${SAVED_LOCATION}/${fileName}`));
+    stream.pipe(
+      fs.createWriteStream(`${saveLocation || SAVED_LOCATION}/${fileName}`)
+    );
 
     stream.on('end', () => {
       resolve(`Finished downloading ${fileName}`);
     });
   }
 
-  downloadVideoAndConvert(downloadItem, resolve) {
+  downloadVideoAndConvert(saveLocation, downloadItem, resolve) {
     const { stream, fileName, size, showProgress } = downloadItem;
     const totalSeconds = helpers.toSeconds(size);
-    const observer = converter.convertToAudio(stream, fileName);
+    const observer = converter.convertToAudio(saveLocation, stream, fileName);
 
     this.spinner.stop();
 

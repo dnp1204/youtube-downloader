@@ -20,7 +20,8 @@ if (parser.params.au || parser.params.audio) {
 }
 
 const downloader = downloaderBuilder.build();
-if (parser.params.links.length === 0) {
+
+if (parser.params.links && parser.params.links.length === 0) {
   console.error(chalk.red('You must provide a link!'));
 } else {
   const { links } = parser.params;

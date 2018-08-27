@@ -15,13 +15,13 @@ class Converter {
     this.eventEmitter = new EventEmitter();
   }
 
-  convertToAudio(stream, title, toFormat = 'mp3') {
+  convertToAudio(saveLocaiton, stream, title, toFormat = 'mp3') {
     const fileName = `${title}.${toFormat}`;
     const converter = new Ffmpeg({ source: stream });
 
     converter
       .toFormat(toFormat)
-      .saveToFile(`${SAVED_LOCATION}/${fileName}`)
+      .saveToFile(`${saveLocaiton || SAVED_LOCATION}/${fileName}`)
       .on('progress', progress => {
         const { timemark } = progress;
         const timeMarkSeconds = helpers.toSeconds(timemark);
