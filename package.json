@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader-dnp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Youtube downloader",
   "main": "index.js",
   "scripts": {
