@@ -26,14 +26,18 @@ class Downloader {
   }
 
   download(links) {
-    const totalLinks = links.length;
+    const filteredLinks = links.filter(link => {
+      return helpers.isLink(link);
+    });
 
-    this.spinner.start();
+    const totalLinks = filteredLinks.length;
 
     if (totalLinks === 0) {
       helpers.displayErrorMessage('You must provide a link!');
       return null;
     }
+
+    this.spinner.start();
 
     if (totalLinks > 1) {
       return this.downloadMultipleLinks(links);
