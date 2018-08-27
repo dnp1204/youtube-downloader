@@ -1,6 +1,6 @@
 {
-  "name": "youtube-download",
-  "version": "1.0.0",
+  "name": "youtube-downloader-dnp",
+  "version": "1.0.1",
   "description": "Youtube downloader",
   "main": "index.js",
   "scripts": {
@@ -8,6 +8,7 @@
   },
   "author": "Doanh Pham",
   "license": "ISC",
+  "bin": "./index.js",
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.0.15",
     "ascii-progress": "^1.0.5",
