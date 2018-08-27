@@ -8,7 +8,9 @@
   },
   "author": "Doanh Pham",
   "license": "ISC",
-  "bin": "./index.js",
+  "bin": {
+    "downloader-dnp": "./index.js"
+  },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.0.15",
     "ascii-progress": "^1.0.5",
